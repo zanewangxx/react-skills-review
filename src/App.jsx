@@ -1,37 +1,77 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Filter from './components/Filter.jsx'
 import PersonsForm from './components/PersonsForm.jsx'
 import Persons from './components/Persons.jsx'
+import personsService from './service/persons.jsx'
 
 const App = () =>{
-  const [persons, setPersons] = useState([
-    { id: 1, name: 'Arto Hellas', number: '040-1234567'},
-    { id: 2, name: 'Ada Lovelace', number: '39-44-5323523'},
-    { id: 3, name: 'Dan Abramov', number: '12-43-234345'},
-    { id: 4, name: 'Mary Poppendieck', number: '39-23-6423122'}
-  ])
+  const [persons, setPersons] = useState([])
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
+
+  useEffect(() => {
+    personsService.getAll().then(initialPersons => {
+      setPersons(initialPersons)
+    })
+  }, []);
   
   const addPerson = (event) => {
-    event.preventDefault()
-    if (persons.some(person => person.name === newName)) {
-      alert(`${newName} is already in the phonebook`)
-      return
+    event.preventDefault();
+    const existingPerson = persons.find(person => person.name === newName);
+
+    if (existingPerson) {
+      if (window.confirm(`${newName} is already in the phonebook, replace the old number with a new one?`)) {
+        const updatedPerson = { ...existingPerson, number: newNumber };
+        updatePerson(existingPerson.id, updatedPerson);
+      }
+      return;
     }
     if (persons.some(person => person.number === newNumber)) {
-      alert(`${newNumber} is already in the phonebook`)
-      return
+      alert(`${newNumber} is already in the phonebook`);
+      return;
     }
-    setPersons(persons.concat({
-      id: persons.length + 1,
+    const personObject = {
       name: newName,
       number: newNumber
-    }))
-    setNewName('')
-    setNewNumber('')
+    };
+    personsService.create(personObject).then(returnedPerson => {
+      setPersons(persons.concat(returnedPerson));
+      setNewName('');
+      setNewNumber('');
+    });
+  };
+
+  const removePerson = (id, name) => {
+    if (window.confirm(`Delete ${name}?`)) {
+      personsService
+        .remove(id)
+        .then(() => {
+          setPersons(persons.filter(p => p.id !== id))
+        })
+        .catch(error => {
+          alert(
+            `the person '${name}' was already deleted from server`
+          )
+          setPersons(persons.filter(p => p.id !== id))
+        })
+    }
   }
+
+  const updatePerson = (id, updatedPerson) => {
+    personsService
+      .update(id, updatedPerson)
+      .then(returnedPerson => {
+        setPersons(persons.map(person => person.id !== id ? person : returnedPerson));
+        setNewName('');
+        setNewNumber('');
+      })
+      .catch(error => {
+        alert(`the person '${updatedPerson.name}' was already deleted from server`);
+        setPersons(persons.filter(p => p.id !== id));
+      });
+  };
+  
   const handleFilterChange = (event) => {
     setFilter(event.target.value)
   }
@@ -44,7 +84,7 @@ const App = () =>{
       <h2>Add a new</h2>
       <PersonsForm newName={newName} newNumber={newNumber} setNewName={setNewName} setNewNumber={setNewNumber} addPerson={addPerson} />
       <h2>Numbers</h2>
-      <Persons persons={personsToShow} />
+      <Persons persons={personsToShow} removePerson={removePerson} />
     </>
   )
 }
