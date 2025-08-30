@@ -21,7 +21,7 @@ const App = () =>{
     const existingPerson = persons.find(person => person.name === newName);
 
     if (existingPerson) {
-      alert(`${newName} is already in the phonebook, replace the old number with a new one?`)
+      alert(`${newName} is already in the phonebook`)
       return;
     }
     if (persons.some(person => person.number === newNumber)) {
