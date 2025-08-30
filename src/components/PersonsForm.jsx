@@ -4,10 +4,10 @@ const PersonsForm = ({newName, newNumber, setNewName, setNewNumber, addPerson}) 
   return (
     <form onSubmit={addPerson}>
       <div>
-        name: <input value={newName} onChange={(event) => setNewName(event.target.value)}/>
+        name: <input value={newName} onChange={(event) => setNewName(event.target.value)} required/>
       </div>
       <div>
-        number: <input value={newNumber} onChange={(event) => setNewNumber(event.target.value)}/>
+        number: <input value={newNumber} onChange={(event) => setNewNumber(event.target.value)} required/>
       </div>
       <div>
         <button type='submit'>add</button>
