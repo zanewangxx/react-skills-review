@@ -21,8 +21,11 @@ const App = () =>{
     const existingPerson = persons.find(person => person.name === newName);
 
     if (existingPerson) {
-      alert(`${newName} is already in the phonebook`)
-      return;
+      const confirmUpdate = window.confirm(
+        `${newName} is already in the phonebook, replace the old number with a new one?`
+      )
+      if (!confirmUpdate) return;
+      return updatePerson(existingPerson.id, { ...existingPerson, number: newNumber });
     }
     if (persons.some(person => person.number === newNumber)) {
       alert(`${newNumber} is already in the phonebook`);
@@ -32,11 +35,16 @@ const App = () =>{
       name: newName,
       number: newNumber
     };
-    personsService.create(personObject).then(returnedPerson => {
-      setPersons(persons.concat(returnedPerson));
-      setNewName('');
-      setNewNumber('');
-    });
+    personsService
+      .create(personObject)
+      .then(returnedPerson => {
+        setPersons(persons.concat(returnedPerson));
+        setNewName('');
+        setNewNumber('');
+      })
+      .catch(error => {
+        alert(error?.response?.data?.error || 'Failed to add person');
+      });
   };
 
   const removePerson = (id, name) => {
@@ -47,10 +55,13 @@ const App = () =>{
           setPersons(persons.filter(p => p.id !== id))
         })
         .catch(error => {
-          alert(
-            `the person '${name}' was already deleted from server`
-          )
-          setPersons(persons.filter(p => p.id !== id))
+          const status = error?.response?.status
+          if (status === 404) {
+            alert(`the person '${name}' was already deleted from server`)
+            setPersons(persons.filter(p => p.id !== id))
+          } else {
+            alert(error?.response?.data?.error || `Failed to delete '${name}'`)
+          }
         })
     }
   }
@@ -64,8 +75,14 @@ const App = () =>{
         setNewNumber('');
       })
       .catch(error => {
-        alert(`the person '${updatedPerson.name}' was already deleted from server`);
-        setPersons(persons.filter(p => p.id !== id));
+        const status = error?.response?.status
+        if (status === 404) {
+          alert(`the person '${updatedPerson.name}' was already deleted from server`)
+          setPersons(persons.filter(p => p.id !== id))
+        } else {
+          // Show backend validation or other error message
+          alert(error?.response?.data?.error || `Failed to update '${updatedPerson.name}'`)
+        }
       });
   };
   
